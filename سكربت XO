@@ -280,6 +280,17 @@ for i=1,9 do
     end)
 end
 
+-- صاحب القناة: Osama-h6p (في الأسفل وسط)
+local ownerLabel = Instance.new("TextLabel", main)
+ownerLabel.Size = UDim2.new(1, 0, 0, 22)
+ownerLabel.Position = UDim2.new(0, 0, 1, -22)
+ownerLabel.BackgroundTransparency = 1
+ownerLabel.Text = "صاحب القناة: Osama-h6p"
+ownerLabel.TextColor3 = Color3.fromRGB(200,200,200)
+ownerLabel.Font = Enum.Font.GothamSemibold
+ownerLabel.TextSize = 14
+ownerLabel.TextXAlignment = Enum.TextXAlignment.Center
+
 exitBtn.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
