@@ -1,0 +1,288 @@
+-- TicTacToe (X vs AI) - Smaller Window + Draggable UI
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local PlayerGui = player:WaitForChild("PlayerGui")
+
+local wins, losses, draws = 0, 0, 0
+local board = {"","","","","","","","",""}
+local currentPlayer
+local aiPlayer
+local busy = false
+
+-- الألوان القياسية
+local XColor = Color3.fromRGB(255,255,255)
+local OColor = Color3.fromRGB(255,255,255)
+local DefaultColor = Color3.fromRGB(240,240,240)
+
+-- اختيار عشوائي لللاعب
+if math.random(1,2) == 1 then
+    currentPlayer = "X"
+    aiPlayer = "O"
+else
+    currentPlayer = "O"
+    aiPlayer = "X"
+end
+
+-- UI
+local gui = Instance.new("ScreenGui", PlayerGui)
+gui.Name = "XO_UI"
+gui.ResetOnSpawn = false
+
+local main = Instance.new("Frame", gui)
+main.Size = UDim2.new(0, 240, 0, 300)
+main.Position = UDim2.new(0.5, -120, 0.5, -160)
+main.BackgroundColor3 = Color3.fromRGB(25,25,25)
+Instance.new("UICorner", main).CornerRadius = UDim.new(0,10)
+
+-- DRAG SYSTEM
+local dragging, dragStart, startPos
+main.Active = true
+main.Selectable = true
+main.Draggable = true
+
+local UIS = game:GetService("UserInputService")
+
+main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = main.Position
+    end
+end)
+
+main.InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+UIS.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+-- Title
+local title = Instance.new("TextLabel", main)
+title.Size = UDim2.new(1,0,0,35)
+title.BackgroundTransparency = 1
+title.Text = "لعبة X O"
+title.TextSize = 20
+title.Font = Enum.Font.GothamBold
+title.TextColor3 = Color3.fromRGB(255,255,255)
+
+-- Exit Button
+local exitBtn = Instance.new("TextButton", main)
+exitBtn.Size = UDim2.new(0,65,0,28)
+exitBtn.Position = UDim2.new(1,-70,0,4)
+exitBtn.Text = "خروج"
+exitBtn.TextColor3 = Color3.new(1,1,1)
+exitBtn.BackgroundColor3 = Color3.fromRGB(180,30,30)
+Instance.new("UICorner", exitBtn).CornerRadius = UDim.new(0,8)
+
+-- Stats
+local stats = Instance.new("TextLabel", main)
+stats.Size = UDim2.new(1,-20,0,22)
+stats.Position = UDim2.new(0,10,0,40)
+stats.BackgroundTransparency = 1
+stats.TextXAlignment = Enum.TextXAlignment.Left
+stats.Font = Enum.Font.Gotham
+stats.TextSize = 15
+stats.TextColor3 = Color3.fromRGB(220,220,220)
+
+local function updateStats()
+    stats.Text = "Win:"..wins.."  Lose:"..losses.."  Draw:"..draws
+end
+
+-- Status
+local status = Instance.new("TextLabel", main)
+status.Size = UDim2.new(1,-20,0,22)
+status.Position = UDim2.new(0,10,0,60)
+status.BackgroundTransparency = 1
+status.Font = Enum.Font.Gotham
+status.TextSize = 15
+status.TextColor3 = Color3.fromRGB(200,200,200)
+status.Text = "دورك: " .. currentPlayer
+
+-- Board (smaller)
+local boardFrame = Instance.new("Frame", main)
+boardFrame.Size = UDim2.new(0,200,0,200)
+boardFrame.Position = UDim2.new(0.5,-100,0,90)
+boardFrame.BackgroundTransparency = 1
+
+local grid = Instance.new("UIGridLayout", boardFrame)
+grid.CellSize = UDim2.new(0,60,0,60)
+grid.CellPadding = UDim2.new(0,5,0,5)
+
+local combo = {
+    {1,2,3},{4,5,6},{7,8,9},
+    {1,4,7},{2,5,8},{3,6,9},
+    {1,5,9},{3,5,7}
+}
+
+local function checkWinner(b)
+    for _,c in ipairs(combo) do
+        if b[c[1]] ~= "" and b[c[1]] == b[c[2]] and b[c[2]] == b[c[3]] then
+            return b[c[1]]
+        end
+    end
+    return nil
+end
+
+local function isFull(b)
+    for i=1,9 do if b[i]=="" then return false end end
+    return true
+end
+
+local function minimax(b,isMax)
+    local w = checkWinner(b)
+    if w == aiPlayer then return 1 end
+    if w == currentPlayer then return -1 end
+    if isFull(b) then return 0 end
+
+    if isMax then  
+        local best = -99  
+        for i=1,9 do  
+            if b[i]=="" then  
+                b[i]=aiPlayer  
+                best = math.max(best, minimax(b,false))  
+                b[i]=""  
+            end  
+        end  
+        return best  
+    else  
+        local best = 99  
+        for i=1,9 do  
+            if b[i]=="" then  
+                b[i]=currentPlayer  
+                best = math.min(best, minimax(b,true))  
+                b[i]=""  
+            end  
+        end  
+        return best  
+    end
+end
+
+local function bestMove()
+    local best = -99
+    local move
+    for i=1,9 do
+        if board[i]=="" then
+            board[i]=aiPlayer
+            local score = minimax(board,false)
+            board[i]=""
+            if score > best then
+                best = score
+                move = i
+            end
+        end
+    end
+    return move
+end
+
+local buttons = {}
+
+for i=1,9 do
+    local b = Instance.new("TextButton", boardFrame)
+    b.Text = ""
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 32
+    b.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    buttons[i] = b
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,8)
+
+    b.MouseButton1Click:Connect(function()  
+        if busy or board[i] ~= "" then return end  
+
+        board[i] = currentPlayer  
+        b.Text = currentPlayer  
+        b.TextColor3 = (currentPlayer == "X") and XColor or OColor
+
+        local w = checkWinner(board)  
+        if w == currentPlayer then  
+            wins += 1  
+            updateStats()  
+            status.Text = "فزت"  
+            task.delay(1, function()  
+                board = {"","","","","","","","",""}  
+                for k,v in ipairs(buttons) do 
+                    v.Text=""
+                    v.TextColor3 = DefaultColor
+                end  
+                status.Text = "دورك: " .. currentPlayer  
+            end)  
+            return  
+        end  
+
+        if isFull(board) then  
+            draws += 1  
+            updateStats()  
+            status.Text = "تعادل"  
+            task.delay(1, function()  
+                board = {"","","","","","","","",""}  
+                for k,v in ipairs(buttons) do 
+                    v.Text=""
+                    v.TextColor3 = DefaultColor
+                end  
+                status.Text = "دورك: " .. currentPlayer  
+            end)  
+            return  
+        end  
+
+        busy = true  
+        status.Text = "البوت يفكر..."  
+
+        task.delay(0.45, function()  
+            local m = bestMove()  
+            if m then  
+                board[m] = aiPlayer  
+                buttons[m].Text = aiPlayer  
+                buttons[m].TextColor3 = (aiPlayer == "X") and XColor or OColor
+            end  
+
+            local w2 = checkWinner(board)  
+            if w2 == aiPlayer then  
+                losses += 1  
+                updateStats()  
+                status.Text = "خسرت"  
+                busy = true  
+                task.delay(1, function()  
+                    board = {"","","","","","","","",""}  
+                    for k,v in ipairs(buttons) do 
+                        v.Text=""
+                        v.TextColor3 = DefaultColor
+                    end  
+                    status.Text = "دورك: " .. currentPlayer  
+                    busy = false  
+                end)  
+                return  
+            end  
+
+            if isFull(board) then  
+                draws += 1  
+                updateStats()  
+                status.Text = "تعادل"  
+                task.delay(1, function()  
+                    board = {"","","","","","","","",""}  
+                    for k,v in ipairs(buttons) do 
+                        v.Text=""
+                        v.TextColor3 = DefaultColor
+                    end  
+                    status.Text = "دورك: " .. currentPlayer  
+                end)  
+                return  
+            end  
+
+            busy = false  
+            status.Text = "دورك: " .. currentPlayer  
+        end)  
+    end)
+end
+
+exitBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+updateStats()
+main.Visible = true
