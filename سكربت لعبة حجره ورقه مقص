@@ -1,0 +1,150 @@
+local player = game.Players.LocalPlayer
+
+-- GUI
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.ResetOnSpawn = false
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 240, 0, 260)
+frame.Position = UDim2.new(0.5, -120, 0.5, -130)
+frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.Active = true
+frame.Draggable = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,10)
+
+-- Close button
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.new(0,30,0,25)
+closeBtn.Position = UDim2.new(1,-35,0,5)
+closeBtn.Text = "X"
+closeBtn.BackgroundColor3 = Color3.fromRGB(150,40,40)
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 14
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0,5)
+closeBtn.MouseButton1Click:Connect(function()
+	gui:Destroy()
+end)
+
+-- Title
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,28)
+title.Position = UDim2.new(0,0,0,0)
+title.BackgroundTransparency = 1
+title.Text = "حجرة ورقة مقص"
+title.TextColor3 = Color3.fromRGB(255,255,255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+
+-- Score
+local score = {win=0, lose=0, draw=0}
+
+local scoreLabel = Instance.new("TextLabel", frame)
+scoreLabel.Size = UDim2.new(1,0,0,22)
+scoreLabel.Position = UDim2.new(0,0,0,28)
+scoreLabel.BackgroundTransparency = 1
+scoreLabel.TextColor3 = Color3.fromRGB(200,200,200)
+scoreLabel.Font = Enum.Font.Gotham
+scoreLabel.TextSize = 14
+scoreLabel.Text = "فوز:0 | خسارة:0 | تعادل:0"
+
+local robotLabel = Instance.new("TextLabel", frame)
+robotLabel.Size = UDim2.new(1,0,0,20)
+robotLabel.Position = UDim2.new(0,0,0,55)
+robotLabel.BackgroundTransparency = 1
+robotLabel.Text = "الروبوت:"
+robotLabel.TextColor3 = Color3.new(1,1,1)
+robotLabel.Font = Enum.Font.GothamBold
+robotLabel.TextSize = 15
+
+-- Robot buttons (cannot click)
+local robotBtns = {}
+local choices = {"🪨", "📄", "✂️"}
+
+for i, icon in ipairs(choices) do
+	local btn = Instance.new("TextLabel", frame)
+	btn.Size = UDim2.new(0,60,0,35)
+	btn.Position = UDim2.new(0.08 + (i-1)*0.3, 0, 0, 80)
+	btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	btn.Text = icon
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 20
+	btn.BorderSizePixel = 0
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+	robotBtns[i] = btn
+end
+
+-- "You:" Label
+local youLabel = Instance.new("TextLabel", frame)
+youLabel.Size = UDim2.new(1,0,0,20)
+youLabel.Position = UDim2.new(0,0,0,125)
+youLabel.BackgroundTransparency = 1
+youLabel.Text = "انت:"
+youLabel.TextColor3 = Color3.new(1,1,1)
+youLabel.Font = Enum.Font.GothamBold
+youLabel.TextSize = 15
+
+-- Player buttons
+local canClick = true
+
+local function resetColors()
+	for _, b in ipairs(robotBtns) do
+		b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	end
+	for _, b in ipairs(youBtns) do
+		b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	end
+end
+
+youBtns = {}
+for i, icon in ipairs(choices) do
+	local btn = Instance.new("TextButton", frame)
+	btn.Size = UDim2.new(0,60,0,35)
+	btn.Position = UDim2.new(0.08 + (i-1)*0.3, 0, 0, 150)
+	btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	btn.Text = icon
+	btn.TextColor3 = Color3.new(1,1,1)
+	btn.Font = Enum.Font.GothamBold
+	btn.TextSize = 20
+	btn.BorderSizePixel = 0
+	Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+	youBtns[i] = btn
+
+	btn.MouseButton1Click:Connect(function()
+		if not canClick then return end
+		canClick = false
+
+		resetColors()
+		btn.BackgroundColor3 = Color3.fromRGB(0,170,255)
+
+		local robotChoice = math.random(1,3)
+		robotBtns[robotChoice].BackgroundColor3 = Color3.fromRGB(0,255,100)
+
+		if robotChoice == i then
+			score.draw += 1
+		elseif (i == 1 and robotChoice == 3)
+		or (i == 2 and robotChoice == 1)
+		or (i == 3 and robotChoice == 2) then
+			score.win += 1
+		else
+			score.lose += 1
+		end
+
+		scoreLabel.Text = "فوز:"..score.win.." | خسارة:"..score.lose.." | تعادل:"..score.draw
+
+		task.wait(1)
+		resetColors()
+		canClick = true
+	end)
+end
+
+-- قناة صاحب السكربت
+local owner = Instance.new("TextLabel", frame)
+owner.Size = UDim2.new(1,0,0,20)
+owner.Position = UDim2.new(0,0,1,-25)
+owner.BackgroundTransparency = 1
+owner.TextColor3 = Color3.fromRGB(255, 255, 0)
+owner.Font = Enum.Font.GothamBold
+owner.TextSize = 14
+owner.Text = "صاحب القناة: osama-h6p"
