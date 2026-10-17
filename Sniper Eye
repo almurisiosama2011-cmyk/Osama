@@ -1,0 +1,342 @@
+local ALLOWED_PLACE_ID = 17625359962 
+
+if game.PlaceId ~= ALLOWED_PLACE_ID then
+	warn("السكربت متوقف: هذا مو الماب المسموح")
+	return
+end
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local lp = Players.LocalPlayer
+local cam = workspace.CurrentCamera
+
+local RADIUS = 110
+local lockOn = false
+local outlinesOn = false
+local running = true
+local locked
+
+local GOLD = Color3.fromRGB(255, 200, 60)
+local GREEN = Color3.fromRGB(40, 170, 70)
+local RED = Color3.fromRGB(190, 50, 50)
+
+local function addBorder(obj, radius, color, thick)
+	Instance.new("UICorner", obj).CornerRadius = UDim.new(0, radius)
+	local s = Instance.new("UIStroke", obj)
+	s.Color = color or GOLD
+	s.Thickness = thick or 1
+	return s
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "LegendMenu"
+gui.IgnoreGuiInset = true
+gui.ResetOnSpawn = false
+gui.Parent = lp:WaitForChild("PlayerGui")
+
+-- الدائرة
+local circle = Instance.new("Frame")
+circle.AnchorPoint = Vector2.new(0.5, 0.5)
+circle.Position = UDim2.fromScale(0.5, 0.5)
+circle.Size = UDim2.fromOffset(RADIUS * 2, RADIUS * 2)
+circle.BackgroundTransparency = 1
+circle.Parent = gui
+Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+local cStroke = Instance.new("UIStroke", circle)
+cStroke.Color = Color3.new(1, 1, 1)
+cStroke.Thickness = 2
+
+-- الحواف
+local function outline(char)
+	if not running or char:FindFirstChild("Outline") then return end
+	local h = Instance.new("Highlight")
+	h.Name = "Outline"
+	h.Enabled = outlinesOn
+	h.FillTransparency = 1
+	h.OutlineColor = Color3.new(1, 1, 1)
+	h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+	h.Parent = char
+end
+
+local function track(p)
+	if p == lp then return end
+	p.CharacterAdded:Connect(function(c)
+		task.wait(0.2)
+		outline(c)
+	end)
+	if p.Character then outline(p.Character) end
+end
+for _, p in ipairs(Players:GetPlayers()) do track(p) end
+Players.PlayerAdded:Connect(track)
+
+task.spawn(function()
+	while running do
+		for _, p in ipairs(Players:GetPlayers()) do
+			if p ~= lp and p.Character and not p.Character:FindFirstChild("Outline") then
+				outline(p.Character)
+			end
+		end
+		task.wait(1)
+	end
+end)
+
+-- دالة السحب
+local function makeDraggable(handle, target)
+	local dragging, dragStart, startPos, moved = false, nil, nil, false
+	handle.InputBegan:Connect(function(i)
+		if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
+			dragging, moved = true, false
+			dragStart, startPos = i.Position, target.Position
+		end
+	end)
+	UIS.InputChanged:Connect(function(i)
+		if dragging and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
+			local d = i.Position - dragStart
+			if d.Magnitude > 4 then moved = true end
+			if moved then
+				target.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + d.X, startPos.Y.Scale, startPos.Y.Offset + d.Y)
+			end
+		end
+	end)
+	UIS.InputEnded:Connect(function(i)
+		if dragging and (i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch) then
+			dragging = false
+		end
+	end)
+	return function() return moved end
+end
+
+-- القائمة
+local menu = Instance.new("Frame")
+menu.Size = UDim2.fromOffset(184, 184)
+menu.Position = UDim2.fromScale(0.5, 0.5)
+menu.AnchorPoint = Vector2.new(0.5, 0.5)
+menu.BackgroundColor3 = Color3.fromRGB(20, 14, 30)
+menu.Parent = gui
+addBorder(menu, 8, GOLD, 2)
+local grad = Instance.new("UIGradient", menu)
+grad.Color = ColorSequence.new(Color3.fromRGB(55, 25, 90), Color3.fromRGB(10, 8, 18))
+grad.Rotation = 90
+
+local header = Instance.new("Frame")
+header.Size = UDim2.new(1, 0, 0, 30)
+header.BackgroundTransparency = 1
+header.Parent = menu
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, -40, 1, 0)
+title.Position = UDim2.fromOffset(10, 0)
+title.BackgroundTransparency = 1
+title.Text = "Sniper Eye"
+title.TextColor3 = GOLD
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 13
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.fromOffset(22, 22)
+closeBtn.Position = UDim2.new(1, -28, 0, 4)
+closeBtn.BackgroundColor3 = RED
+closeBtn.Text = "×"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+closeBtn.AutoButtonColor = false
+closeBtn.Parent = header
+addBorder(closeBtn, 6, GOLD, 1)
+
+local function makeBtn(y, text, color)
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(1, -20, 0, 28)
+	b.Position = UDim2.fromOffset(10, y)
+	b.BackgroundColor3 = color
+	b.Text = text
+	b.TextColor3 = Color3.new(1, 1, 1)
+	b.Font = Enum.Font.GothamBold
+	b.TextSize = 13
+	b.AutoButtonColor = false
+	b.Parent = menu
+	addBorder(b, 6, GOLD, 1)
+	return b
+end
+
+local outlineBtn = makeBtn(38, "Outlines: OFF", RED)
+
+local sizeLabel = Instance.new("TextLabel")
+sizeLabel.Size = UDim2.new(1, -20, 0, 16)
+sizeLabel.Position = UDim2.fromOffset(10, 74)
+sizeLabel.BackgroundTransparency = 1
+sizeLabel.Text = "Circle Size (20 - 300)"
+sizeLabel.TextColor3 = Color3.fromRGB(220, 220, 220)
+sizeLabel.Font = Enum.Font.GothamMedium
+sizeLabel.TextSize = 12
+sizeLabel.TextXAlignment = Enum.TextXAlignment.Left
+sizeLabel.Parent = menu
+
+local sizeBox = Instance.new("TextBox")
+sizeBox.Size = UDim2.new(1, -20, 0, 24)
+sizeBox.Position = UDim2.fromOffset(10, 92)
+sizeBox.BackgroundColor3 = Color3.fromRGB(35, 28, 50)
+sizeBox.Text = tostring(RADIUS)
+sizeBox.PlaceholderText = "20 - 300"
+sizeBox.TextColor3 = GOLD
+sizeBox.Font = Enum.Font.GothamBold
+sizeBox.TextSize = 14
+sizeBox.ClearTextOnFocus = false
+sizeBox.Parent = menu
+addBorder(sizeBox, 6, GOLD, 1)
+
+local circleBtn = makeBtn(126, "Circle: OFF", RED)
+
+local devLabel = Instance.new("TextLabel")
+devLabel.Size = UDim2.new(1, 0, 0, 16)
+devLabel.Position = UDim2.new(0, 0, 1, -20)
+devLabel.BackgroundTransparency = 1
+devLabel.Text = "Developer: x_7i67"
+devLabel.TextColor3 = GOLD
+devLabel.Font = Enum.Font.GothamBold
+devLabel.TextSize = 11
+devLabel.Parent = menu
+
+local menuMoved = makeDraggable(header, menu)
+
+-- وظائف الأزرار
+local function setLock(v)
+	lockOn = v
+	circle.Visible = v
+	circleBtn.Text = "Circle: " .. (v and "ON" or "OFF")
+	circleBtn.BackgroundColor3 = v and GREEN or RED
+	if not v then
+		locked = nil
+		local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+		if h then h.AutoRotate = true end
+	end
+end
+
+local function setOutlines(v)
+	outlinesOn = v
+	outlineBtn.Text = "Outlines: " .. (v and "ON" or "OFF")
+	outlineBtn.BackgroundColor3 = v and GREEN or RED
+	for _, p in ipairs(Players:GetPlayers()) do
+		local o = p.Character and p.Character:FindFirstChild("Outline")
+		if o then o.Enabled = v end
+	end
+end
+
+local function setMenu(v)
+	if not running then return end
+	menu.Visible = v
+end
+
+local function setRadius(n)
+	RADIUS = n
+	circle.Size = UDim2.fromOffset(RADIUS * 2, RADIUS * 2)
+end
+
+-- إطفاء كل شي وحذف القائمة
+local function shutdown()
+	running = false
+	lockOn = false
+	locked = nil
+	RunService:UnbindFromRenderStep("HeadLock")
+	local h = lp.Character and lp.Character:FindFirstChildOfClass("Humanoid")
+	if h then h.AutoRotate = true end
+	for _, p in ipairs(Players:GetPlayers()) do
+		local o = p.Character and p.Character:FindFirstChild("Outline")
+		if o then o:Destroy() end
+	end
+	gui:Destroy()
+end
+
+outlineBtn.MouseButton1Click:Connect(function() setOutlines(not outlinesOn) end)
+circleBtn.MouseButton1Click:Connect(function() setLock(not lockOn) end)
+closeBtn.MouseButton1Click:Connect(function()
+	if not menuMoved() then shutdown() end
+end)
+
+-- خانة الأرقام فقط
+sizeBox:GetPropertyChangedSignal("Text"):Connect(function()
+	local clean = sizeBox.Text:gsub("%D", "")
+	if clean ~= sizeBox.Text then
+		sizeBox.Text = clean
+	end
+end)
+
+sizeBox.FocusLost:Connect(function()
+	local n = tonumber(sizeBox.Text)
+	if n then
+		n = math.clamp(math.floor(n), 20, 300)
+		setRadius(n)
+		sizeBox.Text = tostring(n)
+	else
+		sizeBox.Text = tostring(RADIUS)
+	end
+end)
+
+UIS.InputBegan:Connect(function(i, gp)
+	if running and not gp and i.KeyCode == Enum.KeyCode.RightShift then
+		setMenu(not menu.Visible)
+	end
+end)
+
+setRadius(RADIUS)
+setLock(false)
+setOutlines(false)
+
+-- القفل على الراس
+local function screenDist(head)
+	local pos, onScreen = cam:WorldToViewportPoint(head.Position)
+	if not onScreen then return nil end
+	return (Vector2.new(pos.X, pos.Y) - cam.ViewportSize / 2).Magnitude
+end
+
+local rayParams = RaycastParams.new()
+rayParams.FilterType = Enum.RaycastFilterType.Exclude
+
+local function visible(head)
+	rayParams.FilterDescendantsInstances = {lp.Character, head.Parent}
+	local origin = cam.CFrame.Position
+	return workspace:Raycast(origin, head.Position - origin, rayParams) == nil
+end
+
+local function valid(head)
+	if not head or not head.Parent then return false end
+	local hum = head.Parent:FindFirstChildOfClass("Humanoid")
+	if not hum or hum.Health <= 0 then return false end
+	local d = screenDist(head)
+	return d ~= nil and d <= RADIUS and visible(head)
+end
+
+RunService:BindToRenderStep("HeadLock", Enum.RenderPriority.Camera.Value + 1, function()
+	if not lockOn then return end
+	if not valid(locked) then
+		locked = nil
+		local bestDist
+		for _, p in ipairs(Players:GetPlayers()) do
+			local head = p ~= lp and p.Character and p.Character:FindFirstChild("Head")
+			if head and valid(head) then
+				local d = screenDist(head)
+				if not bestDist or d < bestDist then
+					locked, bestDist = head, d
+				end
+			end
+		end
+	end
+
+	local char = lp.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if hum then hum.AutoRotate = (locked == nil) end
+	if locked then
+		cam.CFrame = CFrame.lookAt(cam.CFrame.Position, locked.Position)
+		if root then
+			local t = locked.Position
+			root.CFrame = CFrame.lookAt(root.Position, Vector3.new(t.X, root.Position.Y, t.Z))
+		end
+	end
+end)
+game.Players.PlayerAdded:Connect(function(player)
+	print(player.Name .. " دخل اللعبة")
+end)
