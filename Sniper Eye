@@ -1,4 +1,4 @@
-local ALLOWED_PLACE_ID = 17625359962 
+local ALLOWED_PLACE_ID = 117398147513099 
 
 if game.PlaceId ~= ALLOWED_PLACE_ID then
 	warn("السكربت متوقف: هذا مو الماب المسموح")
